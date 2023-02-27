@@ -1,0 +1,103 @@
+---
+title: "LeNet CNN Implementation"
+output: html_document
+date: "2023-02-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("tensorflow")
+library(tensorflow)
+#install_tensorflow()
+library(keras)
+library(tensorflow)
+library(dplyr)
+library(yardstick)
+library(caret)
+```
+
+## Install TensorFlow
+
+
+```{r}
+install_tensorflow()
+```
+
+## Loading in MNIST Dataset
+
+
+```{r}
+mnist=dataset_mnist()
+```
+
+## Loading in Train and Test Datasets
+
+```{r}
+train_images <- mnist$train$x
+train_labels <- mnist$train$y
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+str(train_images)
+str(train_labels)
+str(test_images)
+str(test_labels)
+
+train_images <- array_reshape(train_images, 
+                              dim = c(nrow(train_images), 28, 28, 1))
+train_images <- train_images / 255
+
+test_images <- array_reshape(test_images, 
+                             dim = c(nrow(test_images), 28, 28, 1))
+test_images <- test_images / 255
+```
+
+## Compiling Network
+
+```{r}
+network3 <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'tanh', input_shape = c(28,28,1)) %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = c(28,28,1)) %>%
+  layer_max_pooling_2d(pool_size = c(3,3)) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_flatten() %>%
+  layer_dense(units = 250, activation = 'sigmoid') %>%
+  layer_dense(units = 10, activation = 'softmax')
+
+network3 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+
+network3 <- keras_model_sequential() %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'tanh', input_shape = c(28,28,1)) %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu', input_shape = c(28,28,1)) %>%
+  layer_max_pooling_2d(pool_size = c(3,3)) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_flatten() %>%
+  layer_dense(units = 250, activation = 'sigmoid') %>%
+  layer_dense(units = 10, activation = 'softmax')
+
+network3 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+## Prediction Test
+
+```{r}
+pred_test <- network3 %>% predict(test_images) %>% k_argmax() %>% as.integer()
+
+pred_test <- as.factor(pred_test)
+test_labels <- as.factor(test_labels)
+
+confusionMatrix(pred_test, test_labels, mode = "everything", positive = "1")
+
+table(pred_test, test_labels)
+
+print(pred_test)
+```
+
