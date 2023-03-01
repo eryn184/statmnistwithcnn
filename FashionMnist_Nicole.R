@@ -7,8 +7,11 @@ library(tidyverse)
 
 fashion_mnist <- dataset_fashion_mnist()
 
-c(train_images, train_labels) %<-% fashion_mnist$train
-c(test_images, test_labels) %<-% fashion_mnist$test
+train_images <- mnist$train$x
+train_labels <- mnist$train$y
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+
 
 class_names = c('T-shirt/top',
                 'Trouser',
