@@ -15,6 +15,7 @@ library(tensorflow)
 library(dplyr)
 library(yardstick)
 library(caret)
+library(tidyverse)
 ```
 
 ## Install TensorFlow
@@ -29,6 +30,7 @@ install_tensorflow()
 
 ```{r}
 mnist=dataset_mnist()
+mnist <- dataset_fashion_mnist()
 ```
 
 ## Loading in Train and Test Datasets
@@ -109,3 +111,10 @@ AlexNet %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
 metrics <- AlexNet %>% evaluate(test_images, test_labels, verbose = 0)
 metrics
 ```
+```{r}
+Network3 %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
+
+metrics <- Network3 %>% evaluate(test_images, test_labels, verbose = 0)
+metrics
+```
+

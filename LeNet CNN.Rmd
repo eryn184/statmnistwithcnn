@@ -77,7 +77,7 @@ network3 %>% compile(
 ```
 
 ```{r}
-network3 %>% fit(train_images, train_labels, epochs = 1,  batch_size = 128)
+network3 %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
 
 metrics <- network3 %>% evaluate(test_images, test_labels, verbose = 0)
 metrics
