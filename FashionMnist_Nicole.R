@@ -94,6 +94,12 @@ score <- model %>% evaluate(test_images, test_labels, verbose = 0)
 cat('Test loss:', score["loss"], "\n") #0.3368211
 cat('Test accuracy:', score["accuracy"], "\n") #0.8804
 
+metrics <- network %>% evaluate(test_images, test_labels, verbose = 0)
+metrics
+
+Error <- 1 - metrics[2]
+Error
+
 
 #Look at predictions
 predictions <- model %>% predict(test_images)

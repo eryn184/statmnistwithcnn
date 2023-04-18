@@ -60,4 +60,12 @@ network %>% compile(
 network %>% fit(train_images, train_labels, epochs = 5, batch_size = 128)
 
 
+metrics <- network %>% evaluate(test_images, test_labels, verbose = 0)
+metrics
 
+Error <- 1 - metrics[2]
+Error
+
+#Loss: 0.06359591
+#Accuracy: 0.98049998
+#Error: 0.01950002; 1.95%
