@@ -30,7 +30,6 @@ install_tensorflow()
 
 ```{r}
 mnist=dataset_mnist()
-mnist <- dataset_fashion_mnist()
 ```
 
 ## Loading in Train and Test Datasets
@@ -106,15 +105,30 @@ AlexNet %>% compile(
 ```
 
 ```{r}
-AlexNet %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
+callbacks <- list(
+  callback_early_stopping(patience = 2, monitor = 'val_loss'),
+  callback_tensorboard(log_dir = './logs')
+)
+
+AlexNet %>% fit(train_images, train_labels, epochs = 15,  batch_size = 128, callbacks = callbacks, validation_data = list(test_images, test_labels))
 
 metrics <- AlexNet %>% evaluate(test_images, test_labels, verbose = 0)
 metrics
 ```
-```{r}
-Network3 %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
 
-metrics <- Network3 %>% evaluate(test_images, test_labels, verbose = 0)
-metrics
+
+```{r}
+pred_test <- AlexNet %>% predict(test_images) %>% k_argmax() %>% as.integer()
+
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+pred_test <- as.factor(pred_test)
+test_labels <- as.factor(test_labels)
+
+confusionMatrix(pred_test, test_labels, mode = "everything", positive = "1")
+
+table(pred_test, test_labels)
+
+print(pred_test)
 ```
 

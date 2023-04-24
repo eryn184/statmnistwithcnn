@@ -77,7 +77,12 @@ network3 %>% compile(
 ```
 
 ```{r}
-network3 %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
+callbacks <- list(
+  callback_early_stopping(patience = 2, monitor = 'val_loss'),
+  callback_tensorboard(log_dir = './logs')
+)
+
+network3 %>% fit(train_images, train_labels, epochs = 15,  batch_size = 128, callbacks = callbacks, validation_data = list(test_images, test_labels))
 
 metrics <- network3 %>% evaluate(test_images, test_labels, verbose = 0)
 metrics

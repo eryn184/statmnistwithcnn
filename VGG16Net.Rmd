@@ -16,6 +16,9 @@ library(dplyr)
 library(yardstick)
 library(caret)
 library(tidyverse)
+library(raster)
+library(reticulate)
+
 ```
 
 ## Install TensorFlow
@@ -30,32 +33,43 @@ install_tensorflow()
 
 ```{r}
 mnist=dataset_mnist()
-mnist <- dataset_fashion_mnist()
 ```
 
 ## Loading in Train and Test Datasets
+
 
 ```{r}
 train_images <- mnist$train$x
 train_labels <- mnist$train$y
 test_images <- mnist$test$x
 test_labels <- mnist$test$y
-str(train_images)
-str(train_labels)
-str(test_images)
-str(test_labels)
-
-train_images <- array_reshape(train_images, 
-                              dim = c(nrow(train_images), 28, 28, 1))
-train_images <- train_images / 255
-
-test_images <- array_reshape(test_images, 
-                             dim = c(nrow(test_images), 28, 28, 1))
-test_images <- test_images / 255
 
 
-train_labels <- to_categorical(train_labels)
-test_labels <- to_categorical(test_labels)
+source_python("dstack.py")
+
+train_images <- dstack(train_images)
+test_images <- dstack(test_images)
+
+dim(train_labels)
+
+source_python("reshape.py")
+
+train_images <- reshape(train_images)
+test_images <- reshape(test_images)
+
+dim(train_images)
+
+source_python("as_array.py")
+
+train_images <- as_array(train_images)
+test_images <- as_array(test_images)
+
+dim(test_images)
+
+train_labels <- to_categorical(train_labels, num_classes = 0)
+test_labels <- to_categorical(test_labels, num_classes = 0)
+
+dim(test_images)
 ```
 
 ## Compiling Network
@@ -64,7 +78,7 @@ test_labels <- to_categorical(test_labels)
 ```{r}
   
 VGG16Net <- keras_model_sequential() %>% 
-  layer_conv_2d(filters = 64, kernel_size = c(3,3), padding = 'same', activation = 'relu', input_shape = c(28, 28, 1)) %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), padding = 'same', activation = 'relu', input_shape = c(48,48,3)) %>%
   layer_conv_2d(filters = 64, kernel_size = c(3,3), padding = 'same', activation = 'relu') %>%
     layer_max_pooling_2d(pool_size = c(2,2), strides = c(2,2)) %>%
     layer_conv_2d(filters = 128, kernel_size = c(3,3), padding = 'same', activation = 'relu') %>%
@@ -82,10 +96,6 @@ VGG16Net <- keras_model_sequential() %>%
   layer_conv_2d(filters = 512, kernel_size = c(3,3), padding = 'same', activation = 'relu') %>%
   layer_conv_2d(filters = 512, kernel_size = c(3,3), padding = 'same', activation = 'relu') %>%
     layer_flatten() %>%
-    layer_dense(units = 256, activation = 'relu') %>%
-  layer_dropout(rate = 0.5) %>%
-    layer_dense(units = 256, activation = 'relu') %>%
-  layer_dropout(rate = 0.5) %>%
     layer_dense(units = 10, activation = 'softmax')
     
 VGG16Net %>% compile(
@@ -94,13 +104,79 @@ VGG16Net %>% compile(
   metrics = c("accuracy")
 )
 
+summary(VGG16Net)
+
 ```
 
 ```{r}
-VGG16Net %>% fit(train_images, train_labels, epochs = 10,  batch_size = 128)
+callbacks <- list(
+  callback_early_stopping(patience = 2, monitor = 'val_loss'),
+  callback_tensorboard(log_dir = './logs')
+)
+
+
+VGG16Net %>% fit(train_images, train_labels, epochs = 15,  batch_size = 128,  callbacks = callbacks, validation_data = list(test_images, test_labels))
 
 metrics <- VGG16Net %>% evaluate(test_images, test_labels, verbose = 0)
 metrics
 ```
 
+```{r}
+pred_test <- VGG16Net %>% predict(test_images) %>% k_argmax() %>% as.integer()
+
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+pred_test <- as.factor(pred_test)
+test_labels <- as.factor(test_labels)
+
+confusionMatrix(pred_test, test_labels, mode = "everything", positive = "1")
+
+table(pred_test, test_labels)
+
+print(pred_test)
+```
+
+```{r}
+train_images <- mnist$train$x
+train_labels <- mnist$train$y
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+str(train_images)
+str(train_labels)
+str(test_images)
+str(test_labels)
+
+train_images <- array_reshape(train_images, 
+                              dim = c(nrow(train_images), 784))
+train_images <- train_images / 255
+
+test_images <- array_reshape(test_images, 
+                             dim = c(nrow(test_images), 784))
+test_images <- test_images / 255
+
+
+train_labels <- to_categorical(train_labels, num_classes = 10)
+test_labels <- to_categorical(test_labels, num_classes = 10)
+
+
+
+model <- keras_model_sequential() %>%
+  layer_dense(units = 256, activation = "relu", input_shape = c(784)) %>%
+  layer_dropout(rate = 0.25) %>% 
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dropout(rate = 0.25) %>% 
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(rate = 0.25) %>%
+  layer_dense(units = 10, activation = "softmax")
+
+model %>% compile(
+  loss = "categorical_crossentropy",
+  optimizer = optimizer_adam(),
+  metrics = c("accuracy")
+)
+
+  history <- model %>% 
+  fit(train_images, train_labels, epochs = 50, batch_size = 128, validation_data = list(test_images, test_labels))
+
+```
 
